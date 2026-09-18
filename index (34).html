@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>リズムれんしゅう</title>
+<style>
+:root{
+  --page:#E8ECE6;
+  --ink:#1E2B28;
+  --ink-soft:#55645F;
+  --board:#2C584A;
+  --board-deep:#234739;
+  --frame:#CBD2CD;
+  --chalk:#F5F3E8;
+  --chalk-y:#FFD84D;
+  --chalk-p:#FFA3B5;
+  --p1:#F5F3E8;
+  --p2:#9FD6E6;
+  --card:#FFFFFF;
+  --card-rest:#E3EEF3;
+  --go:#FFC933;
+  --font:"BIZ UDPGothic","Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic UI","Meiryo",sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{
+  margin:0;background:var(--page);color:var(--ink);
+  font-family:var(--font);font-size:18px;line-height:1.5;
+  touch-action:manipulation;
+}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+button:focus-visible,.item:focus-visible,input:focus-visible{outline:4px solid #2F7BD9;outline-offset:3px}
+.wrap{max-width:1180px;margin:0 auto;padding:20px 20px 48px}
+
+/* ---- あたま ---- */
+.top{display:flex;flex-wrap:wrap;align-items:center;gap:12px 28px;margin-bottom:16px}
+h1{font-size:30px;line-height:1.2;margin:0 auto 0 0;font-weight:800;letter-spacing:.06em}
+.set{display:flex;align-items:center;gap:8px}
+.set-name{font-size:15px;font-weight:700;color:var(--ink-soft)}
+.seg{display:flex}
+.seg button{
+  min-width:52px;min-height:48px;padding:0 12px;background:#fff;border:2px solid var(--ink);
+  border-left-width:0;font-weight:700;font-size:18px;
+}
+.seg button:first-child{border-left-width:2px;border-radius:10px 0 0 10px}
+.seg button:last-child{border-radius:0 10px 10px 0}
+.seg button[aria-pressed="true"]{background:var(--ink);color:#fff}
+.step{display:flex;align-items:stretch}
+.step button{
+  min-width:52px;min-height:48px;background:#fff;border:2px solid var(--ink);
+  font-size:24px;font-weight:800;line-height:1;
+}
+.step button:first-child{border-radius:10px 0 0 10px}
+.step button:last-child{border-radius:0 10px 10px 0;border-left-width:0}
+.step button:disabled{color:#A9B2AD;background:#F1F4F1;cursor:default}
+.step button:not(:disabled):active{background:#DDE3DE}
+.step output{
+  display:inline-flex;align-items:center;justify-content:center;min-width:60px;
+  border:2px solid var(--ink);border-left-width:0;border-right-width:0;background:#fff;
+  font-size:20px;font-weight:800;
+}
+.frac{display:inline-flex;flex-direction:column;align-items:center;line-height:1;font-family:Georgia,"Times New Roman",serif;font-size:17px}
+.frac span:first-child{border-bottom:2px solid currentColor;padding:0 3px 1px}
+.frac span:last-child{padding-top:1px}
+
+/* ---- こくばん ---- */
+.board{
+  position:relative;background:var(--board);color:var(--chalk);--hole:var(--board);
+  border:7px solid var(--frame);border-radius:10px;
+  box-shadow:inset 0 0 0 2px var(--board-deep);
+  padding:16px 18px 18px;margin-bottom:22px;overflow-x:auto;
+}
+.tray{height:9px;margin:-22px 26px 0;background:#AEB6B1;border-radius:0 0 5px 5px;position:relative}
+.tray::before,.tray::after{content:"";position:absolute;top:-5px;height:6px;border-radius:2px}
+.tray::before{right:40px;width:34px;background:var(--chalk)}
+.tray::after{right:84px;width:22px;background:var(--chalk-y)}
+.row{display:flex;align-items:flex-start}
+.row + .row{margin-top:10px}
+.m-svg{display:block;flex:none;overflow:visible}
+.staff{stroke:var(--chalk);stroke-width:2;opacity:.85}
+.bar{stroke:var(--chalk);stroke-width:2;opacity:.9}
+.bar-end{stroke:var(--chalk);stroke-width:6}
+.ts-num{fill:var(--chalk);font-family:Georgia,"Times New Roman",serif;font-weight:700;font-size:26px;text-anchor:middle;opacity:.9}
+.staff.mute{stroke-dasharray:9 6;opacity:.5}
+.part1{color:var(--p1)}
+.part2{color:var(--p2)}
+.pmark circle{fill:currentColor}
+.pmark text{fill:var(--board-deep);font-size:13px;font-weight:800;text-anchor:middle;font-family:var(--font)}
+.beam{fill:currentColor}
+.item{cursor:pointer;outline-offset:0}
+.item .hl{fill:transparent}
+.item.sel{color:var(--chalk-p)}
+.item.sel .hl{fill:rgba(255,163,181,.2);stroke:var(--chalk-p);stroke-width:2}
+.item.playing{color:var(--chalk-y)}
+.item.playing .hl{fill:rgba(255,216,77,.17)}
+.say{fill:currentColor;text-anchor:start;font-family:var(--font);font-weight:700}
+.say.r{opacity:.7}
+.beat circle{fill:none;stroke:var(--chalk);stroke-width:1.5;opacity:.45}
+.beat text{fill:var(--chalk);opacity:.75;font-size:13px;font-weight:700;text-anchor:middle;font-family:var(--font)}
+.beat.on circle{fill:var(--chalk-y);stroke:var(--chalk-y);opacity:1}
+.beat.on text{fill:var(--board-deep);opacity:1}
+.room rect{fill:rgba(245,243,232,.06);stroke:currentColor;stroke-width:1.5;stroke-dasharray:6 6;opacity:.55}
+.room text{fill:currentColor;opacity:.85;font-size:15px;font-weight:700;text-anchor:middle;font-family:var(--font)}
+.mute-mark{fill:currentColor;opacity:.8;font-size:11px;font-weight:700;font-family:var(--font)}
+.mnum{fill:var(--chalk);opacity:.6;font-size:13px;font-weight:700;font-family:var(--font)}
+.intro-frame{fill:rgba(255,216,77,.05);stroke:var(--chalk-y);stroke-width:2;stroke-dasharray:7 6;opacity:.45}
+.row.intro.act .intro-frame{opacity:1;fill:rgba(255,216,77,.09)}
+.ilabel{fill:var(--chalk-y);font-size:12px;font-weight:800;font-family:var(--font);opacity:.75}
+.row.intro.act .ilabel{opacity:1}
+.ihint{fill:var(--chalk-y);opacity:.6;font-size:14px;font-weight:700;text-anchor:middle;font-family:var(--font)}
+.row.intro{margin-bottom:12px}
+#tag-a b{margin-left:6px;padding:1px 7px;border-radius:999px;background:var(--go);color:var(--ink);font-size:12.5px}
+#count{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;
+  font-size:120px;font-weight:800;color:var(--chalk-y);pointer-events:none;
+  background:rgba(35,71,57,.55);
+}
+#count.on{display:flex}
+
+/* ---- こくばんの下 ---- */
+.under{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-top:22px}
+#msg{flex:1 1 320px;min-height:1.6em;margin:0;font-weight:700;font-size:18px}
+.btn{
+  background:#fff;border:2px solid var(--ink);border-radius:999px;
+  min-height:52px;padding:8px 20px;font-weight:700;font-size:17px;
+}
+.btn:active{background:#DDE3DE}
+.btn[aria-pressed="true"]{background:var(--ink);color:#fff}
+
+/* ---- つくえ ---- */
+.desk{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:12px 36px;margin-top:26px}
+.desk > div{min-width:0}
+@media (max-width:880px){.desk{grid-template-columns:1fr}}
+h2{font-size:19px;margin:22px 0 10px;font-weight:800;letter-spacing:.04em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.desk > div > h2:first-child{margin-top:0}
+.tag{
+  display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:700;
+  background:#fff;border:2px solid var(--ink);border-radius:999px;padding:2px 12px 2px 8px;
+}
+.dot{width:14px;height:14px;border-radius:50%;border:1.5px solid var(--ink);display:inline-block}
+.dot.d1{background:#FBFAF2}
+.dot.d2{background:var(--p2)}
+
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px 10px}
+.mag{
+  --hole:var(--card);
+  display:flex;flex-direction:column;align-items:center;
+  background:var(--card);border:2px solid var(--ink);border-radius:9px;
+  box-shadow:0 4px 0 var(--ink);padding:4px 4px 8px;min-height:124px;
+}
+.mag.rest{--hole:var(--card-rest);background:var(--card-rest)}
+.mag:active{transform:translateY(3px);box-shadow:0 1px 0 var(--ink)}
+.mag svg{width:60px;height:66px;color:var(--ink)}
+.mag .ln{font-size:16px;font-weight:800;line-height:1.2}
+.mag .nm{font-size:12.5px;line-height:1.25;color:var(--ink-soft);text-align:center;margin-top:2px}
+.line-g{stroke:#9AA7A1;stroke-width:1.6}
+
+.pills{display:flex;flex-wrap:wrap;gap:10px}
+
+/* ---- ほぞん ---- */
+.slot{display:flex;align-items:stretch;min-width:0;gap:8px;background:#fff;border:2px solid var(--ink);border-radius:12px;padding:6px}
+.slot + .slot{margin-top:8px}
+.slot.empty{background:#F1F4F1}
+.slot-load{
+  flex:1;min-width:0;display:flex;align-items:center;gap:10px;text-align:left;
+  background:none;border:0;border-radius:8px;padding:6px 8px;min-height:52px;
+}
+.slot-load:disabled{cursor:default;opacity:.75}
+.slot-no{
+  flex:none;display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;
+  border-radius:50%;border:2px solid var(--ink);background:var(--go);font-size:15px;font-weight:800;
+}
+.slot.empty .slot-no{background:#fff;color:var(--ink-soft)}
+.slot-txt{min-width:0}
+.slot-txt b{display:block;font-size:15px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot-txt b + b{color:#2E6C88}
+.slot-txt span{display:block;font-size:12.5px;line-height:1.3;color:var(--ink-soft);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.slot-btn{
+  flex:none;background:#fff;border:2px solid var(--ink);border-radius:9px;
+  min-width:74px;padding:6px 10px;font-size:15px;font-weight:700;
+}
+.slot-btn.del{min-width:58px;color:var(--ink-soft)}
+.slot-btn.ask{background:var(--go);border-color:var(--ink)}
+.slot-btn:active{background:#DDE3DE}
+.note{margin:8px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink-soft)}
+@media (max-width:560px){
+  .slot-txt b,.slot-txt span{white-space:normal}
+  .slot-btn{min-width:62px;padding:6px 6px}
+  .slot-btn.del{min-width:52px}
+}
+
+/* ---- えんそう ---- */
+.play{
+  width:100%;min-height:80px;border-radius:16px;border:3px solid var(--ink);
+  background:var(--go);box-shadow:0 5px 0 var(--ink);font-size:26px;font-weight:800;letter-spacing:.06em;
+}
+.play:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.play.on{background:var(--ink);color:#fff}
+.tempo{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;margin-top:20px}
+.tempo-head{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;font-weight:700}
+.tempo-head output{font-size:22px;font-weight:800}
+.tempo small{grid-column:1/-1;display:flex;justify-content:space-between;color:var(--ink-soft);font-size:14px;margin-top:-4px;padding:0 66px}
+.round{width:56px;height:56px;border-radius:50%;border:2px solid var(--ink);background:#fff;font-size:26px;font-weight:800;line-height:1}
+.vol{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;margin-top:14px}
+.vol + .vol{margin-top:16px}
+.vol-head{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-weight:700}
+.vol-head span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vol-head output{flex:none;font-size:20px;font-weight:800}
+.vol .round{width:50px;height:50px;font-size:24px}
+.round:active{background:#DDE3DE}
+input[type=range]{width:100%;height:44px;accent-color:var(--ink);margin:0}
+.toggles{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+
+/* ---- パート ---- */
+.prow{
+  display:flex;align-items:stretch;gap:10px;background:#fff;
+  border:2px solid var(--ink);border-radius:12px;padding:6px;
+}
+.prow + .prow{margin-top:10px}
+.prow.act{border-color:var(--ink);box-shadow:0 0 0 4px var(--go)}
+.nowtag{display:none}
+.prow.act .nowtag{
+  display:inline-flex;align-items:center;margin-left:auto;
+  background:var(--ink);color:#fff;border-radius:999px;font-size:12.5px;font-weight:800;padding:3px 10px;
+}
+.pbtn{
+  flex:1;display:flex;align-items:center;gap:10px;min-height:52px;padding:4px 8px;
+  background:none;border:0;font-weight:800;font-size:17px;text-align:left;border-radius:8px;
+}
+.pbtn .pinst{font-weight:700}
+.pbtn svg{width:28px;height:28px;flex:none}
+.seg.mini button{min-width:0;min-height:52px;padding:0 12px;font-size:15px;border-radius:0}
+.seg.mini button:first-child{border-radius:8px 0 0 8px}
+.seg.mini button:last-child{border-radius:0 8px 8px 0}
+
+.insts{display:grid;grid-template-columns:repeat(auto-fill,minmax(98px,1fr));gap:10px}
+.inst{
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:#fff;border:2px solid var(--ink);border-radius:12px;min-height:84px;padding:8px 4px;
+  font-weight:700;font-size:15px;
+}
+.inst svg{width:38px;height:38px;color:var(--ink)}
+.inst[aria-pressed="true"]{background:var(--ink);color:#fff}
+.inst[aria-pressed="true"] svg{color:#fff}
+
+#pad{
+  width:100%;min-height:150px;margin-top:4px;border-radius:22px;border:3px solid var(--ink);
+  background:var(--board);color:var(--chalk);font-size:24px;font-weight:800;letter-spacing:.08em;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  box-shadow:0 6px 0 var(--ink);user-select:none;-webkit-user-select:none;touch-action:none;
+}
+#pad small{font-size:14px;font-weight:700;opacity:.8;letter-spacing:.02em}
+#pad.taiko{
+  background:
+    radial-gradient(ellipse closest-side at 50% 50%, rgba(245,243,232,.09) 0 80%, rgba(0,0,0,0) 80.5%),
+    radial-gradient(ellipse closest-side at 50% 50%, rgba(0,0,0,0) 0 80%, rgba(245,243,232,.42) 80.5% 82.5%, rgba(0,0,0,0) 83%),
+    var(--board);
+}
+#pad.hit{transform:translateY(5px);box-shadow:0 1px 0 var(--ink);background:#3B7462;color:var(--chalk-y)}
+
+@media (prefers-reduced-motion:no-preference){
+  .mag,.play,#pad{transition:transform .06s ease-out, box-shadow .06s ease-out}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>リズムれんしゅう</h1>
+    <div class="set">
+      <span class="set-name" id="lb-beats">ひょうし</span>
+      <div class="seg" id="seg-beats" role="group" aria-labelledby="lb-beats"></div>
+    </div>
+    <div class="set">
+      <span class="set-name" id="lb-meas">しょうせつ</span>
+      <div class="step" id="step-meas" role="group" aria-labelledby="lb-meas">
+        <button id="m-down" aria-label="しょうせつを 1つ へらす">−</button>
+        <output id="meas-out" for="step-meas">2</output>
+        <button id="m-up" aria-label="しょうせつを 1つ ふやす">＋</button>
+      </div>
+    </div>
+    <button class="btn" id="btn-say" aria-pressed="true">よみかた</button>
+  </header>
+
+  <section class="board" id="board" aria-label="こくばん">
+    <div id="score"></div>
+    <div id="count" aria-hidden="true"></div>
+  </section>
+  <div class="tray" aria-hidden="true"></div>
+
+  <div class="under">
+    <p id="msg" role="status" aria-live="polite"></p>
+    <div class="set">
+      <span class="set-name" id="lb-target">かく ところ</span>
+      <div class="seg mini" id="seg-target" role="group" aria-labelledby="lb-target">
+        <button data-t="intro">イントロ</button>
+        <button data-t="main">リズム</button>
+      </div>
+    </div>
+    <button class="btn" id="btn-del">1つ けす</button>
+    <button class="btn" id="btn-clear">ぜんぶ けす</button>
+  </div>
+
+  <div class="desk">
+    <div>
+      <h2>おんぷ <span class="tag" id="tag-a"></span></h2>
+      <div class="cards" id="cards-note"></div>
+      <h2>きゅうふ</h2>
+      <div class="cards" id="cards-rest"></div>
+      <h2>おてほん</h2>
+      <div class="pills" id="samples"></div>
+      <h2>おまかせ</h2>
+      <div class="pills" id="randoms"></div>
+      <h2>ほぞん</h2>
+      <div id="slots"></div>
+      <p class="note" id="slot-note"></p>
+    </div>
+
+    <div>
+      <h2>えんそう</h2>
+      <button class="play" id="btn-play">▶ えんそうする</button>
+      <div class="tempo">
+        <div class="tempo-head"><label for="tempo">はやさ</label><output id="tempo-out" for="tempo">80</output></div>
+        <button class="round" id="t-down" aria-label="おそくする">−</button>
+        <input type="range" id="tempo" min="40" max="160" step="4" value="80">
+        <button class="round" id="t-up" aria-label="はやくする">＋</button>
+        <small><span>ゆっくり</span><span>はやい</span></small>
+      </div>
+      <div class="toggles">
+        <button class="btn" id="btn-metro" aria-pressed="true">メトロノーム</button>
+        <button class="btn" id="btn-loop" aria-pressed="false">くりかえす</button>
+      </div>
+
+      <h2>2つの パート</h2>
+      <div id="parts"></div>
+
+      <h2>がっき <span class="tag" id="tag-b"></span></h2>
+      <div class="insts" id="insts"></div>
+
+      <h2>おとの おおきさ</h2>
+      <div class="vol">
+        <div class="vol-head"><span id="vol-inst-label"></span><output id="vol-inst-out" for="vol-inst">100</output></div>
+        <button class="round" id="vi-down" aria-label="がっきを ちいさく">−</button>
+        <input type="range" id="vol-inst" min="0" max="200" step="10" value="100" aria-label="がっきの おおきさ">
+        <button class="round" id="vi-up" aria-label="がっきを おおきく">＋</button>
+      </div>
+      <div class="vol">
+        <div class="vol-head"><span>メトロノーム・4はくの カウント</span><output id="vol-click-out" for="vol-click">100</output></div>
+        <button class="round" id="vc-down" aria-label="メトロノームを ちいさく">−</button>
+        <input type="range" id="vol-click" min="0" max="200" step="10" value="100" aria-label="メトロノームの おおきさ">
+        <button class="round" id="vc-up" aria-label="メトロノームを おおきく">＋</button>
+      </div>
+
+      <h2>じぶんで たたく</h2>
+      <button id="pad" aria-label="がっきを ならす"><span id="pad-name">たいこ</span><small id="pad-hint">ここを たたこう（スペースキーでも なるよ）</small></button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+
+/* =========================================================
+   おんぷ・きゅうふの しゅるい（dur は 16ぶおんぷ = 1）
+   ========================================================= */
+const T = {
+  w : {dur:16, head:'whole', stem:false, flags:0, dot:false, ln:'4はく',    nm:['ぜん','おんぷ'],        say:['ター','アー','アー','アン']},
+  hd: {dur:12, head:'open',  stem:true,  flags:0, dot:true,  ln:'3ぱく',    nm:['ふてん にぶ','おんぷ'],  say:['ター','アー','アン']},
+  h : {dur:8,  head:'open',  stem:true,  flags:0, dot:false, ln:'2はく',    nm:['にぶ','おんぷ'],        say:['ター','アン']},
+  qd: {dur:6,  head:'fill',  stem:true,  flags:0, dot:true,  ln:'1ぱくはん', nm:['ふてん しぶ','おんぷ'],  say:['ターン']},
+  q : {dur:4,  head:'fill',  stem:true,  flags:0, dot:false, ln:'1ぱく',    nm:['しぶ','おんぷ'],        say:['タン']},
+  ed: {dur:3,  head:'fill',  stem:true,  flags:1, dot:true,  ln:'はんぱくと はんぶん', nm:['ふてん はちぶ','おんぷ'], say:['タッ']},
+  e : {dur:2,  head:'fill',  stem:true,  flags:1, dot:false, ln:'はんぱく',  nm:['はちぶ','おんぷ'],      say:['タ']},
+  s : {dur:1,  head:'fill',  stem:true,  flags:2, dot:false, ln:'はんぱくの はんぶん', nm:['じゅうろくぶ','おんぷ'], say:null},
+  wr: {dur:16, rest:true, ln:'4はく',   nm:['ぜん','きゅうふ'],   say:['ウン','ウン','ウン','ウン']},
+  hr: {dur:8,  rest:true, ln:'2はく',   nm:['にぶ','きゅうふ'],   say:['ウン','ウン']},
+  qr: {dur:4,  rest:true, ln:'1ぱく',   nm:['しぶ','きゅうふ'],   say:['ウン']},
+  er: {dur:2,  rest:true, ln:'はんぱく', nm:['はちぶ','きゅうふ'], say:['ウ']},
+  sr: {dur:1,  rest:true, ln:'はんぱくの はんぶん', nm:['じゅうろくぶ','きゅうふ'], say:['ウ']},
+};
+const NOTE_IDS = ['w','hd','h','qd','q','ed','e','s'];
+const REST_IDS = ['wr','hr','qr','er','sr'];
+const MARK = ['①','②'];
+
+const SAMPLES = [
+  {label:'タン タン タン タン', a:[['q'],['q'],['q'],['q']]},
+  {label:'タン タン タン ウン', a:[['q'],['q'],['q'],['qr']]},
+  {label:'タタ タン タタ タン', a:[['e','e'],['q'],['e','e'],['q']]},
+  {label:'タン タタ タン ウン', a:[['q'],['e','e'],['q'],['qr']], b:[['e','e'],['e','e'],['q'],['qr']]},
+  {label:'ウン タン ウン タン', a:[['qr'],['q'],['qr'],['q']]},
+  {label:'タッカ タン タッカ タン', a:[['ed','s'],['q'],['ed','s'],['q']]},
+];
+const CELLS = {
+  1:[['q'],['q'],['q'],['qr'],['h']],
+  2:[['q'],['q'],['qr'],['h'],['e','e'],['e','e']],
+  3:[['q'],['qr'],['e','e'],['e','e'],['s','s','s','s'],['e','s','s'],['s','s','e'],['er','e'],['qd','e'],['ed','s'],['s','ed'],['e','sr','s'],['h']],
+};
+
+const state = {
+  beats:4, measures:2,
+  parts:[
+    {inst:'wood', mute:false, score:[[],[]], intro:[]},
+    {inst:'clap', mute:false, score:[[],[]], intro:[]},
+  ],
+  active:1, sel:null,
+  target:'main',
+  tempo:80, metro:true, loop:false, showSay:true,
+};
+
+const $ = id => document.getElementById(id);
+const scoreEl = $('score'), msgEl = $('msg'), countEl = $('count');
+const cap = () => state.beats * 4;
+const arr = (pt, m) => m < 0 ? pt.intro : pt.score[m];
+const sum = ids => ids.reduce((a,id) => a + T[id].dur, 0);
+const act = () => state.parts[state.active];
+
+function beatsText(u){
+  const whole = Math.floor(u/4), rem = u % 4;
+  const unit = n => (n===1||n===3) ? 'ぱく' : 'はく';
+  const small = ['', '16ぶんおんぷ 1つぶん', 'はんぱく', '16ぶんおんぷ 3つぶん'][rem];
+  if (whole === 0) return small;
+  if (rem === 0) return whole + unit(whole);
+  if (rem === 2) return whole + unit(whole) + 'はん';
+  return whole + unit(whole) + 'と ' + small;
+}
+function say(text){ msgEl.textContent = text; }
+function setTempo(v){
+  state.tempo = Math.max(40, Math.min(160, v));
+  $('tempo').value = state.tempo; $('tempo-out').textContent = state.tempo;
+}
+
+/* =========================================================
+   おんぷの え（SVG）
+   ========================================================= */
+const STEM_X = 6.4, STEM_TOP = -40;
+const QREST = 'M-3,-19 L6,-8.5 C2.2,-5 1.8,-1.5 4.2,2 L8,7.5 C2,6.2 -2.5,9.5 2,17.5 C-7.5,13.5 -9,4.5 -1.5,4.2 L-7,-3.5 C-2.2,-7 -1.2,-12 -5,-17 Z';
+
+function glyph(id, beamed){
+  const t = T[id];
+  if (t.rest){
+    if (id==='wr') return '<rect x="-9" y="1" width="18" height="7.5" fill="currentColor"/>';
+    if (id==='hr') return '<rect x="-9" y="-8.5" width="18" height="7.5" fill="currentColor"/>';
+    if (id==='qr') return `<path d="${QREST}" fill="currentColor"/>`;
+    if (id==='sr') return '<path d="M6.2,-13 L-1.4,13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="-3" cy="-10.6" r="3.2" fill="currentColor"/><path d="M-3,-9 Q1.4,-7 6.2,-13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/><circle cx="-2.3" cy="1.2" r="3.2" fill="currentColor"/><path d="M-2.3,2.8 Q1.2,4.2 3.4,-3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>';
+    return '<circle cx="-3.6" cy="-7" r="3.3" fill="currentColor"/><path d="M-3.6,-5.4 Q2,-3.6 5.6,-9.4 L-0.6,12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>';
+  }
+  let s = '';
+  if (t.stem) s += `<line x1="${STEM_X}" y1="-2" x2="${STEM_X}" y2="${STEM_TOP}" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"/>`;
+  if (t.head==='whole') s += '<ellipse rx="8.8" ry="5.8" style="fill:var(--hole)" stroke="currentColor" stroke-width="2.8"/>';
+  else if (t.head==='open') s += '<ellipse rx="6.7" ry="4.6" transform="rotate(-22)" style="fill:var(--hole)" stroke="currentColor" stroke-width="2.3"/>';
+  else s += '<ellipse rx="7.5" ry="5.3" transform="rotate(-22)" fill="currentColor"/>';
+  if (t.dot) s += '<circle cx="14.5" cy="-4.5" r="2.5" fill="currentColor"/>';
+  if (!beamed && t.flags){
+    const flag = y => `<path d="M${STEM_X},${STEM_TOP+y} C${STEM_X+1.6},${STEM_TOP+y+10} ${STEM_X+12.5},${STEM_TOP+y+13} ${STEM_X+8.6},${STEM_TOP+y+27} C${STEM_X+9.4},${STEM_TOP+y+19} ${STEM_X+3.6},${STEM_TOP+y+15} ${STEM_X},${STEM_TOP+y+12} Z" fill="currentColor"/>`;
+    s += flag(0); if (t.flags===2) s += flag(9);
+  }
+  return s;
+}
+
+/* =========================================================
+   がくふの かたち
+   ========================================================= */
+function geometry(){
+  const avail = Math.max(260, scoreEl.clientWidth);
+  const TSW = 66, PADL = 16, PADR = 8;
+  const opts = [4,2,1].filter(n => n <= state.measures);
+  let per = 1, beatW = 60;
+  for (const n of opts){
+    per = n;
+    beatW = (avail - TSW - n*(PADL+PADR)) / (n*state.beats);
+    if (beatW >= 54) break;
+  }
+  beatW = Math.max(42, Math.min(beatW, 104));
+  const nums = state.measures > 2, top = (nums ? 22 : 8), stemRoom = 46, partH = state.showSay ? 94 : 70;
+  const staffY = p => top + p*partH + stemRoom;
+  const dotY = top + 2*partH + 12;
+  return {TSW, PADL, PADR, per, beatW, u:beatW/4, staffY, dotY, partH, nums, numY: top - 8,
+          H: dotY + 16, W: PADL + state.beats*beatW + PADR};
+}
+
+/* おんぷの いちと、はたを つなぐ グループ */
+function layout(ids, g){
+  let pos = 0;
+  const meta = ids.map((id,i) => {
+    const o = {id, i, start:pos, x:g.PADL + pos*g.u + 10, t:T[id]};
+    pos += T[id].dur; return o;
+  });
+  const groups = []; let cur = [];
+  const flush = () => { if (cur.length >= 2) groups.push(cur); cur = []; };
+  meta.forEach(n => {
+    if (n.t.rest || !n.t.flags){ flush(); return; }
+    if (cur.length && Math.floor(cur[0].start/4) !== Math.floor(n.start/4)) flush();
+    cur.push(n);
+  });
+  flush();
+  groups.forEach(gr => gr.forEach(n => n.beamed = true));
+  return {meta, groups, used:pos};
+}
+
+function partSVG(p, m, g){
+  const pt = state.parts[p], ids = arr(pt, m), C = cap(), y0 = g.staffY(p);
+  const {meta, groups, used} = layout(ids, g);
+  let s = `<g class="part part${p+1}" data-p="${p}">`;
+
+  if (p === state.active && used < C && !(m < 0 && state.target !== 'intro')){
+    const act0 = m < 0 ? -1 : pt.score.findIndex(ms => sum(ms) < C);
+    const here = m < 0 ? state.target === 'intro' : (state.target === 'main' && m === act0);
+    const rx = g.PADL + used*g.u + 1, rw = (C-used)*g.u - 4;
+    s += `<g class="room"><rect x="${rx}" y="${y0-44}" width="${rw}" height="62" rx="9"/>`;
+    if (here && rw >= 74) s += `<text x="${rx+rw/2}" y="${y0-22}">あと ${beatsText(C-used)}</text>`;
+    s += '</g>';
+  }
+
+  groups.forEach(gr => {
+    const y = y0 + STEM_TOP;
+    const x1 = gr[0].x + STEM_X - 1, x2 = gr[gr.length-1].x + STEM_X + 1;
+    s += `<rect class="beam" x="${x1}" y="${y}" width="${x2-x1}" height="6"/>`;
+    gr.forEach((n,k) => {
+      if (n.t.flags !== 2) return;
+      const nx = gr[k+1], pv = gr[k-1];
+      if (nx && nx.t.flags === 2) s += `<rect class="beam" x="${n.x+STEM_X-1}" y="${y+9.5}" width="${nx.x-n.x+2}" height="6"/>`;
+      else if (!(pv && pv.t.flags === 2)){
+        const len = Math.min(10, g.u*0.7);
+        s += k === 0
+          ? `<rect class="beam" x="${n.x+STEM_X-1}" y="${y+9.5}" width="${len}" height="6"/>`
+          : `<rect class="beam" x="${n.x+STEM_X+1-len}" y="${y+9.5}" width="${len}" height="6"/>`;
+      }
+    });
+  });
+
+  meta.forEach(n => {
+    const sel = state.sel && state.sel.p===p && state.sel.m===m && state.sel.i===n.i;
+    const name = MARK[p] + 'の ' + n.t.nm.join('').replace(' ','');
+    s += `<g class="item${sel?' sel':''}" data-p="${p}" data-m="${m}" data-i="${n.i}" tabindex="0" role="button" aria-label="${name}">`;
+    s += `<rect class="hl" x="${g.PADL + n.start*g.u + 1}" y="${y0-46}" width="${Math.max(10, n.t.dur*g.u - 2)}" height="${g.partH-4}" rx="9"/>`;
+    s += `<g transform="translate(${n.x},${y0})">${glyph(n.id, n.beamed)}</g>`;
+    if (state.showSay){
+      const words = n.t.say || [n.start % 2 === 0 ? 'タ' : 'カ'];
+      const fs = n.t.dur === 1 ? Math.min(14, g.u*0.85) : 16;
+      words.forEach((w,k) => {
+        s += `<text class="say${n.t.rest?' r':''}" x="${n.x + k*g.beatW - fs/2}" y="${y0+34}" font-size="${fs}">${w}</text>`;
+      });
+    }
+    s += '</g>';
+  });
+  return s + '</g>';
+}
+
+function measureSVG(m, g){
+  const intro = m < 0, last = !intro && m === state.measures-1, W = g.W + (last || intro ? 8 : 0);
+  let s = `<svg class="m-svg${intro ? ' i-svg' : ''}" width="${W}" height="${g.H}" viewBox="0 0 ${W} ${g.H}" role="group" aria-label="${intro ? 'イントロ' : (m+1)+'しょうせつめ'}">`;
+  if (intro){
+    const iy = g.staffY(0)-46, ih = g.staffY(1) + (state.showSay ? 42 : 24) - iy;
+    s += `<rect class="intro-frame" x="1" y="${iy}" width="${W-4}" height="${ih}" rx="10"/>`;
+    if (state.parts.every(pt => !pt.intro.length) && state.target !== 'intro')
+      s += `<text class="ihint" x="${W/2}" y="${g.staffY(0)+g.partH/2}">からっぽなら カウントが 4つ なるよ</text>`;
+  }
+  if (g.nums && !intro) s += `<text class="mnum" x="2" y="${g.numY}">${m+1}</text>`;
+  for (let p=0; p<2; p++) s += `<line class="staff" x1="0" y1="${g.staffY(p)}" x2="${W}" y2="${g.staffY(p)}"/>`;
+  for (let b=0; b<state.beats; b++){
+    const bx = g.PADL + b*g.beatW + 10;
+    s += `<g class="beat" data-m="${m}" data-b="${b}"><circle cx="${bx}" cy="${g.dotY}" r="10"/><text x="${bx}" y="${g.dotY+4.6}">${b+1}</text></g>`;
+  }
+  for (let p=0; p<2; p++) s += partSVG(p, m, g);
+  const y1 = g.staffY(0) - 22, y2 = g.staffY(1) + 22;
+  if (intro){
+    s += `<line class="bar" x1="${W-12}" y1="${y1}" x2="${W-12}" y2="${y2}"/>`;
+  } else if (last){
+    s += `<line class="bar" x1="${W-10}" y1="${y1}" x2="${W-10}" y2="${y2}"/>`;
+    s += `<line class="bar-end" x1="${W-3}" y1="${y1}" x2="${W-3}" y2="${y2}"/>`;
+  } else {
+    s += `<line class="bar" x1="${W-1}" y1="${y1}" x2="${W-1}" y2="${y2}"/>`;
+  }
+  return s + '</svg>';
+}
+
+let hl = {};
+function render(){
+  const g = geometry();
+  let html = '';
+
+  /* イントロの ぎょう */
+  html += `<div class="row intro${state.target === 'intro' ? ' act' : ''}" data-intro="1">`;
+  html += `<svg class="m-svg" width="${g.TSW}" height="${g.H}" viewBox="0 0 ${g.TSW} ${g.H}" aria-hidden="true">`;
+  html += `<text class="ilabel" x="3" y="${g.staffY(0)-28}">イントロ</text>`;
+  for (let p=0; p<2; p++){
+    const y = g.staffY(p), mute = state.parts[p].mute;
+    html += `<line class="staff${mute?' mute':''}" x1="16" y1="${y}" x2="${g.TSW}" y2="${y}"/>`;
+    html += `<g class="pmark part${p+1}"><circle cx="9" cy="${y}" r="9"/><text x="9" y="${y+4.6}">${p+1}</text></g>`;
+  }
+  html += '</svg>';
+  html += measureSVG(-1, g);
+  html += '</div>';
+
+  for (let r=0; r*g.per < state.measures; r++){
+    html += '<div class="row">';
+    html += `<svg class="m-svg" width="${g.TSW}" height="${g.H}" viewBox="0 0 ${g.TSW} ${g.H}" aria-hidden="true">`;
+    for (let p=0; p<2; p++){
+      const y = g.staffY(p), mute = state.parts[p].mute;
+      html += `<line class="staff${mute?' mute':''}" x1="16" y1="${y}" x2="${g.TSW}" y2="${y}"/>`;
+      html += `<g class="pmark part${p+1}"><circle cx="9" cy="${y}" r="9"/><text x="9" y="${y+4.6}">${p+1}</text></g>`;
+      if (mute) html += `<text class="mute-mark part${p+1}" x="0" y="${y-15}">じぶん</text>`;
+      if (r === 0) html += `<text class="ts-num" x="48" y="${y-4}">${state.beats}</text><text class="ts-num" x="48" y="${y+22}">4</text>`;
+    }
+    html += '</svg>';
+    for (let m=r*g.per; m<Math.min(state.measures,(r+1)*g.per); m++) html += measureSVG(m, g);
+    html += '</div>';
+  }
+  scoreEl.innerHTML = html;
+  hl = {};
+}
+
+/* =========================================================
+   ならべる・けす
+   ========================================================= */
+function place(id){
+  const t = T[id], C = cap();
+  if (state.sel){
+    const {p,m,i} = state.sel, ms = arr(state.parts[p], m);
+    if (sum(ms) - T[ms[i]].dur + t.dur > C){ say('その カードは ながすぎて、とりかえられないよ。'); return; }
+    ms[i] = id; state.sel = null; render(); preview(id); say('とりかえたよ。'); return;
+  }
+  const pt = act();
+  if (state.target === 'intro'){
+    const left = C - sum(pt.intro);
+    if (t.dur > left){ say(`イントロには あと ${beatsText(left)} しか はいらないよ。`); return; }
+    pt.intro.push(id); render(); preview(id);
+    const rest = left - t.dur;
+    say(rest === 0 ? `${MARK[state.active]}の イントロが できた！ ▶ で きいてみよう。` : `イントロに あと ${beatsText(rest)} はいるよ。`);
+    return;
+  }
+  const m = pt.score.findIndex(ms => sum(ms) < C);
+  if (m < 0){ say(`${MARK[state.active]}は ぜんぶの しょうせつが いっぱいだよ。`); return; }
+  const left = C - sum(pt.score[m]);
+  if (t.dur > left){ say(`この しょうせつには あと ${beatsText(left)} しか はいらないよ。`); return; }
+  pt.score[m].push(id); render(); preview(id);
+  const nowLeft = left - t.dur;
+  if (nowLeft === 0 && pt.score.every(ms => sum(ms) === C)) say(`${MARK[state.active]}の リズムが できた！ ▶ で きいてみよう。`);
+  else if (nowLeft === 0) say(`${m+1}しょうせつめが いっぱいに なったよ。つぎへ いこう。`);
+  else say(`あと ${beatsText(nowLeft)} はいるよ。`);
+}
+function removeOne(){
+  if (state.sel){
+    const {p,m,i} = state.sel;
+    arr(state.parts[p], m).splice(i,1); state.sel = null; render(); say('えらんだ カードを けしたよ。'); return;
+  }
+  const pt = act();
+  if (state.target === 'intro'){
+    if (pt.intro.length){ pt.intro.pop(); render(); say('イントロの さいごの カードを けしたよ。'); }
+    else say('イントロは からっぽだよ。');
+    return;
+  }
+  for (let m=state.measures-1; m>=0; m--){
+    if (pt.score[m].length){ pt.score[m].pop(); render(); say('さいごの カードを けしたよ。'); return; }
+  }
+  say(`${MARK[state.active]}は からっぽだよ。`);
+}
+function clearAll(){
+  const pt = act();
+  state.sel = null;
+  if (state.target === 'intro'){
+    pt.intro = []; render(); say(`${MARK[state.active]}の イントロを けしたよ。`); return;
+  }
+  pt.score = pt.score.map(() => []); render();
+  say(`${MARK[state.active]}を ぜんぶ けしたよ。`);
+}
+function setTarget(t){
+  if (state.target === t) return;
+  state.target = t; state.sel = null;
+  refreshSegs(); refreshParts(); render();
+  say(t === 'intro'
+    ? `イントロに カードを ならべるよ（${MARK[state.active]}）。`
+    : `リズムの しょうせつに カードを ならべるよ（${MARK[state.active]}）。`);
+}
+function fit(ms){
+  const C = cap(), out = []; let t = 0;
+  for (const id of ms){ if (t + T[id].dur > C) break; out.push(id); t += T[id].dur; }
+  return out;
+}
+function setBeats(b){
+  stopPlay(); state.beats = b; state.sel = null;
+  state.parts.forEach(pt => { pt.score = pt.score.map(fit); pt.intro = fit(pt.intro); });
+  refreshSegs(); render(); say(`4ぶんの${b}びょうしに したよ。1しょうせつは ${b === 3 ? '3ぱく' : b + 'はく'}。`);
+}
+const MAXM = 16;
+function setMeasures(n){
+  n = Math.max(1, Math.min(MAXM, n));
+  stopPlay(); state.sel = null;
+  state.parts.forEach(pt => {
+    while (pt.score.length < n) pt.score.push([]);
+    pt.score.length = n;
+  });
+  const before = state.measures;
+  state.measures = n;
+  refreshSegs(); render();
+  if (n > before) say(`${n}しょうせつめを ふやしたよ。${n > g_per() ? 'つづきは したの ぎょうに かけるよ。' : ''}`);
+  else if (n < before) say(`${n}しょうせつに へらしたよ。`);
+  else say(`${n}しょうせつだよ。`);
+}
+function loadSample(sp, p){
+  const pt = state.parts[p == null ? state.active : p];
+  state.sel = null;
+  pt.score = pt.score.map((_,m) => {
+    const src = (m % 2 === 1 && sp.b) ? sp.b : sp.a, out = [];
+    for (let b=0; b<state.beats; b++) out.push(...src[b % src.length]);
+    return out;
+  });
+  render();
+  if (p == null) say(`${MARK[state.active]}に おてほんを ならべたよ。`);
+}
+function randomScore(level){
+  const pt = act(), C = cap();
+  state.sel = null;
+  pt.score = pt.score.map((_,m) => {
+    const out = []; let left = C;
+    while (left > 0){
+      const opts = CELLS[level].filter(c => sum(c) <= left && !(m===0 && out.length===0 && T[c[0]].rest));
+      const c = opts[Math.floor(Math.random()*opts.length)];
+      out.push(...c); left -= sum(c);
+    }
+    return out;
+  });
+  render(); say(`${MARK[state.active]}に おまかせリズムを ならべたよ。よんでから ▶ で たしかめよう。`);
+}
+
+/* =========================================================
+   リズムを ほぞんする（5つ）
+   ========================================================= */
+const SKEY = 'rhythm-renshu-slots-v1', VKEY = 'rhythm-renshu-vol-v1', SLOTS = 5;
+const VOL = {};
+
+function persistVol(){
+  if (!canStore) return;
+  try{ localStorage.setItem(VKEY, JSON.stringify(VOL)); }catch(_){}
+}
+function loadVol(){
+  if (!canStore) return;
+  try{
+    const raw = localStorage.getItem(VKEY);
+    if (!raw) return;
+    const d = JSON.parse(raw);
+    Object.keys(d || {}).forEach(k => {
+      const v = +d[k];
+      if ((INST[k] || k === 'click') && v >= 0 && v <= 2) VOL[k] = v;
+    });
+  }catch(_){}
+}
+function refreshVol(){
+  const inst = act().inst, iv = Math.round((VOL[inst] == null ? 1 : VOL[inst])*100), cv = Math.round((VOL.click == null ? 1 : VOL.click)*100);
+  $('vol-inst-label').textContent = `${MARK[state.active]} ${INST[inst].name}`;
+  $('vol-inst').value = iv; $('vol-inst-out').textContent = iv;
+  $('vol-click').value = cv; $('vol-click-out').textContent = cv;
+}
+function setVol(target, v){
+  VOL[target] = Math.max(0, Math.min(200, v))/100;
+  refreshVol(); persistVol();
+}
+function testVol(target){
+  if (play || !ensureAudio()) return;
+  if (target === 'click') click(ctx.currentTime + 0.03, true, null, 1.6);
+  else hit(target, ctx.currentTime + 0.03, 0.4, null, {});
+}
+
+let slots = new Array(SLOTS).fill(null), canStore = false, pend = null, pendT = 0;
+
+function snapshot(){
+  return {v:1, beats:state.beats, measures:state.measures, tempo:state.tempo,
+    parts: state.parts.map(pt => ({inst:pt.inst, mute:pt.mute, intro: pt.intro.slice(), score: pt.score.map(ms => ms.slice())}))};
+}
+function sanitize(d){
+  if (!d || typeof d !== 'object') return null;
+  const beats = [2,3,4].includes(d.beats) ? d.beats : 4;
+  const measures = Math.max(1, Math.min(MAXM, Math.round(+d.measures) || 2));
+  const tempo = Math.min(160, Math.max(40, Math.round((+d.tempo || 80)/4)*4));
+  const C = beats*4;
+  const parts = [0,1].map(i => {
+    const sp = (d.parts && d.parts[i]) || {};
+    const score = [];
+    for (let m=0; m<measures; m++){
+      const src = (sp.score && Array.isArray(sp.score[m])) ? sp.score[m] : [];
+      const ms = []; let t = 0;
+      for (const id of src){ if (!T[id]) continue; if (t + T[id].dur > C) break; ms.push(id); t += T[id].dur; }
+      score.push(ms);
+    }
+    const intro = []; let it = 0;
+    for (const id of (Array.isArray(sp.intro) ? sp.intro : [])){
+      if (!T[id]) continue;
+      if (it + T[id].dur > C) break;
+      intro.push(id); it += T[id].dur;
+    }
+    return {inst: INST[sp.inst] ? sp.inst : (i === 0 ? 'wood' : 'clap'), mute: !!sp.mute, intro, score};
+  });
+  if (!parts.some(pt => pt.score.some(ms => ms.length))) return null;
+  return {v:1, beats, measures, tempo, parts};
+}
+function applySnapshot(d){
+  stopPlay();
+  state.beats = d.beats; state.measures = d.measures; state.sel = null;
+  state.parts.forEach((pt,i) => {
+    const sp = d.parts[i];
+    pt.inst = sp.inst; pt.mute = sp.mute; pt.intro = (sp.intro || []).slice(); pt.score = sp.score.map(ms => ms.slice());
+  });
+  setTempo(d.tempo);
+  refreshSegs(); refreshParts(); render();
+}
+function readText(ids){
+  const out = []; let pos = 0, cur = '';
+  ids.forEach(id => {
+    const t = T[id];
+    if (pos % 4 === 0 && cur){ out.push(cur); cur = ''; }
+    cur += (t.say || [pos % 2 === 0 ? 'タ' : 'カ']).join('');
+    pos += t.dur;
+  });
+  if (cur) out.push(cur);
+  return out.join(' ');
+}
+function slotBody(d){
+  const cut = t => t.length > 20 ? t.slice(0,19) + '…' : t;
+  const lines = d.parts.map((pt,i) => {
+    const first = pt.score.find(ms => ms.length);
+    return `<b>${MARK[i]} ${first ? cut(readText(first)) : 'なし'}</b>`;
+  }).join('');
+  const names = d.parts.map((pt,i) => `${MARK[i]}${INST[pt.inst].name}${pt.mute ? '(じぶん)' : ''}`).join('＋');
+  const intro = d.parts.some(pt => (pt.intro || []).length) ? '・イントロあり' : '';
+  return lines + `<span>${d.beats}/4・${d.measures}しょうせつ・はやさ${d.tempo}${intro}・${names}</span>`;
+}
+function persist(){
+  if (!canStore) return;
+  try{ localStorage.setItem(SKEY, JSON.stringify(slots)); }
+  catch(_){ canStore = false; refreshSlots(); }
+}
+function refreshSlots(){
+  $('slots').innerHTML = slots.map((d,i) => {
+    const asking = pend === 'save'+i, askdel = pend === 'del'+i;
+    return `<div class="slot${d ? '' : ' empty'}" data-i="${i}">
+      <button class="slot-load" data-i="${i}"${d ? '' : ' disabled'} aria-label="${i+1}ばんを よびだす">
+        <span class="slot-no">${i+1}</span>
+        <span class="slot-txt">${d ? slotBody(d) : '<b>からっぽ</b><span>ここに いまの リズムを ほぞんできるよ</span>'}</span>
+      </button>
+      <button class="slot-btn save${asking ? ' ask' : ''}" data-i="${i}">${asking ? 'うわがき?' : 'ほぞん'}</button>
+      ${d ? `<button class="slot-btn del${askdel ? ' ask' : ''}" data-i="${i}">${askdel ? 'けす?' : 'けす'}</button>` : ''}
+    </div>`;
+  }).join('');
+  $('slot-note').textContent = canStore
+    ? 'ほぞんした リズムは この きかいの ブラウザに のこります。'
+    : 'この ひらきかたでは ほぞんが のこりません。がめんを とじると きえます。';
+}
+function askTwice(key, run){
+  clearTimeout(pendT);
+  if (pend === key){ pend = null; run(); refreshSlots(); return; }
+  pend = key; refreshSlots();
+  pendT = setTimeout(() => { pend = null; refreshSlots(); }, 6000);
+}
+function saveSlot(i){
+  const d = sanitize(snapshot());
+  if (!d){ say('こくばんが からっぽだよ。おんぷを ならべてから ほぞんしよう。'); return; }
+  if (!slots[i]){
+    pend = null; slots[i] = d; persist(); refreshSlots();
+    say(`${i+1}ばんに ほぞんしたよ。`);
+    return;
+  }
+  askTwice('save'+i, () => { slots[i] = d; persist(); say(`${i+1}ばんに ほぞんしたよ。`); });
+  if (pend === 'save'+i) say(`${i+1}ばんには もう リズムが あるよ。もういちど「うわがき?」を おすと とりかえるよ。`);
+}
+function loadSlot(i){
+  const d = slots[i]; if (!d) return;
+  pend = null; applySnapshot(d); refreshSlots();
+  say(`${i+1}ばんの リズムを よびだしたよ。▶ で きいてみよう。`);
+}
+function delSlot(i){
+  askTwice('del'+i, () => { slots[i] = null; persist(); say(`${i+1}ばんを けしたよ。`); });
+  if (pend === 'del'+i) say(`${i+1}ばんを けす? もういちど「けす?」を おしてね。`);
+}
+function initSlots(){
+  try{
+    localStorage.setItem(SKEY+':t', '1'); localStorage.removeItem(SKEY+':t');
+    canStore = true;
+    const raw = localStorage.getItem(SKEY);
+    if (raw){
+      const a = JSON.parse(raw);
+      if (Array.isArray(a)) slots = a.slice(0, SLOTS).map(sanitize);
+    }
+  }catch(_){ canStore = false; }
+  while (slots.length < SLOTS) slots.push(null);
+  loadVol(); refreshVol(); refreshSlots();
+}
+
+/* =========================================================
+   おと（Web Audio）
+   ========================================================= */
+let ctx = null, master = null, wetIn = null, noiseBuf = null;
+const rnd = (a,b) => a + Math.random()*(b-a);
+
+/* たいいくかんの ような ひびきを つくる */
+function makeIR(sec, decay){
+  const n = Math.floor(ctx.sampleRate*sec), buf = ctx.createBuffer(2, n, ctx.sampleRate);
+  for (let ch=0; ch<2; ch++){
+    const d = buf.getChannelData(ch);
+    for (let i=0;i<n;i++){
+      const t = i/n;
+      d[i] = (Math.random()*2-1) * Math.pow(1-t, decay);
+    }
+  }
+  return buf;
+}
+function initAudio(context){
+  ctx = context;
+  const comp = ctx.createDynamicsCompressor();
+  comp.threshold.value=-13; comp.knee.value=14; comp.ratio.value=3.5;
+  comp.attack.value=0.004; comp.release.value=0.25;
+  const limit = ctx.createDynamicsCompressor();
+  limit.threshold.value = -2; limit.knee.value = 0; limit.ratio.value = 20;
+  limit.attack.value = 0.001; limit.release.value = 0.08;
+  master = ctx.createGain(); master.gain.value = 0.70;
+  master.connect(comp); comp.connect(limit); limit.connect(ctx.destination);
+
+  const len = Math.floor(ctx.sampleRate*2);
+  noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+  const d = noiseBuf.getChannelData(0);
+  for (let i=0;i<len;i++) d[i] = Math.random()*2-1;
+
+  const rev = ctx.createConvolver(); rev.buffer = makeIR(1.8, 2.8);
+  const damp = ctx.createBiquadFilter(); damp.type='lowpass'; damp.frequency.value=6800;
+  wetIn = ctx.createGain(); wetIn.gain.value = 0.9;
+  wetIn.connect(damp); damp.connect(rev); rev.connect(master);
+  return ctx;
+}
+function ensureAudio(){
+  if (!ctx){
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC){ say('この きかいでは おとが だせないよ。'); return null; }
+    initAudio(new AC());
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+  return ctx;
+}
+
+function env(g, t, peak, decay, attack){
+  const a = attack || 0.003, p = Math.max(peak, 0.0004);
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(p, t+a);
+  g.gain.exponentialRampToValueAtTime(0.0001, t+a+decay);
+}
+/* ざつおん（たたいた しゅんかんの おと）*/
+function noise(t, out, type, freq, q, peak, decay, attack){
+  const s = ctx.createBufferSource(); s.buffer = noiseBuf; s.loop = true;
+  const f = ctx.createBiquadFilter(); f.type = type; f.frequency.value = freq; if (q) f.Q.value = q;
+  const g = ctx.createGain(); env(g, t, peak, decay, attack);
+  s.connect(f); f.connect(g); g.connect(out);
+  s.start(t, Math.random()*1.5); s.stop(t + (attack||0.003) + decay + 0.05);
+  return {src:s, gain:g};
+}
+/* ぶぶんおん（かわや きんぞくの しんどう）*/
+function partial(t, out, freq, peak, decay, type, glide, attack){
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = type || 'sine';
+  o.frequency.setValueAtTime(glide ? freq*glide : freq, t);
+  if (glide) o.frequency.exponentialRampToValueAtTime(freq, t + (glide > 1.8 ? 0.055 : 0.03));
+  env(g, t, peak, decay, attack);
+  o.connect(g); g.connect(out);
+  o.start(t); o.stop(t + (attack||0.003) + decay + 0.12);
+  return o;
+}
+
+const SOUND = {
+  /* ウッドブロック：かたい きの つつ */
+  wood(t, dur, out, o){
+    const v = (o.vel || 1) * rnd(0.95, 1.05);
+    const f = 955*rnd(0.99, 1.01);
+    noise(t, out, 'bandpass', 3000, 1.0, 0.28*v, 0.008);
+    partial(t, out, f,       0.34*v, 0.13,  'triangle');
+    partial(t, out, f*1.78,  0.15*v, 0.06,  'triangle');
+    partial(t, out, f*3.05,  0.07*v, 0.032, 'sine');
+    partial(t, out, 470,     0.10*v, 0.085, 'sine');
+  },
+
+  /* わだいこ（みやだいこ）：まんなか＝ドン、ふち＝カッ */
+  drum(t, dur, out, o){
+    const v = (o.vel || 1) * rnd(0.94, 1.06);
+    if (o.rim){
+      noise(t, out, 'bandpass', 2300*rnd(.95,1.05), 1.3, 0.55*v, 0.032);
+      [[440,0.27,0.09],[1180,0.20,0.06],[2560,0.12,0.042]]
+        .forEach(([f,p,d]) => partial(t, out, f*rnd(.98,1.02), p*v, d, 'triangle'));
+      partial(t, out, 152, 0.20*v, 0.065, 'sine', 1.6);
+      return;
+    }
+    const f0 = 57*rnd(0.985, 1.015);
+    /* かわの しんどう（まるい まくの モード）*/
+    [[1,0.76,1.15],[1.59,0.25,0.30],[2.14,0.15,0.20],[2.30,0.10,0.14],[2.92,0.055,0.09]]
+      .forEach(([r,p,d],k) => partial(t, out, f0*r, p*v, d, 'sine', k===0 ? 2.5 : 1.4));
+    /* ばちが かわを うつ おと */
+    noise(t, out, 'bandpass', 1900, 0.9, 0.20*v, 0.016);
+    noise(t, out, 'bandpass', 760, 1.2, 0.26*v, 0.05);
+    /* どうの なかの ひびき */
+    noise(t, out, 'bandpass', 235, 2.6, 0.24*v, 0.17, 0.006);
+    partial(t, out, 96, 0.26*v, 0.28, 'sine', 1.3);
+  },
+
+  castanet(t, dur, out, o){
+    const v = (o.vel || 1) * rnd(0.93, 1.07);
+    const clack = (tt, amp) => {
+      noise(tt, out, 'bandpass', 3600*rnd(.95,1.06), 0.9, 0.40*amp, 0.011);
+      [[1080,0.27,0.045],[1960,0.20,0.034],[3450,0.13,0.026],[5300,0.07,0.018]]
+        .forEach(([f,p,d]) => partial(tt, out, f*rnd(.985,1.015), p*amp, d, 'triangle'));
+      partial(tt, out, 330, 0.09*amp, 0.05, 'sine');
+    };
+    clack(t, v);
+    clack(t + rnd(0.008, 0.014), v*0.42);
+  },
+
+  tambourine(t, dur, out, o){
+    const v = (o.vel || 1) * rnd(0.9, 1.1);
+    /* かわを たたく おと */
+    noise(t, out, 'bandpass', 430, 1.1, 0.20*v, 0.045);
+    partial(t, out, 205, 0.14*v, 0.07, 'sine', 1.4);
+    /* すずが ゆれる おと */
+    noise(t, out, 'highpass', 6400, 0.7, 0.30*v, 0.20, 0.004);
+    [[5350,0.075],[6420,0.065],[7680,0.05],[9150,0.035],[11200,0.022]].forEach(([f,p],k) => {
+      partial(t + rnd(0, 0.02), out, f*rnd(.97,1.03), p*v, rnd(0.16, 0.32), 'sine', 0, 0.004);
+      if (k < 2) partial(t + rnd(0, 0.02), out, f*rnd(1.004,1.012), p*v*0.6, rnd(0.14, 0.28), 'sine', 0, 0.004);
+    });
+  },
+
+  triangle(t, dur, out, o){
+    const v = (o.vel || 1);
+    const f = 2480*rnd(0.995, 1.005);
+    noise(t, out, 'bandpass', 5200, 1.2, 0.14*v, 0.018);
+    [[1,0.17,2.8],[1.51,0.13,2.4],[2.03,0.095,1.9],[2.64,0.065,1.4],[3.19,0.045,1.0],[4.13,0.03,0.7],[5.22,0.018,0.5]]
+      .forEach(([r,p,d],k) => {
+        partial(t, out, f*r, p*v, d, 'sine', 0, 0.004);
+        if (k < 3) partial(t, out, f*r*1.005, p*v*0.65, d*0.9, 'sine', 0, 0.004);
+      });
+  },
+
+  clap(t, dur, out, o){
+    const v = (o.vel || 1) * rnd(0.92, 1.08);
+    [[0,0.50],[0.009,0.46],[0.019,0.38],[0.030,0.27]].forEach(([d,a]) => {
+      noise(t + d + rnd(0, 0.003), out, 'bandpass', 1150*rnd(0.88,1.16), 0.8, a*v, 0.013);
+    });
+    noise(t + 0.036, out, 'bandpass', 1750, 0.7, 0.30*v, 0.19, 0.004);
+    noise(t + 0.020, out, 'bandpass', 2600, 1.0, 0.16*v, 0.09, 0.004);
+    noise(t, out, 'lowpass', 620, 0.7, 0.10*v, 0.05);
+  },
+
+  recorder(t, dur, out, o){
+    const v = (o.vel || 1), f = 523.25;
+    const g = ctx.createGain(), lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 3400;
+    g.connect(lp); lp.connect(out);
+
+    const lfo = ctx.createOscillator(), lg = ctx.createGain();
+    lfo.type = 'sine'; lfo.frequency.value = 5.1;
+    lg.gain.setValueAtTime(0, t); lg.gain.linearRampToValueAtTime(3.0, t+0.4);
+    lfo.connect(lg); lfo.start(t);
+
+    const oscs = [lfo];
+    [[1,0.5],[2,0.15],[3,0.05],[4,0.018]].forEach(([r,a]) => {
+      const os = ctx.createOscillator(), ga = ctx.createGain(), vg = ctx.createGain();
+      os.type = 'sine';
+      os.frequency.setValueAtTime(f*r*0.988, t);
+      os.frequency.exponentialRampToValueAtTime(f*r, t+0.05);
+      vg.gain.value = r; lg.connect(vg); vg.connect(os.frequency);
+      ga.gain.value = a; os.connect(ga); ga.connect(g);
+      os.start(t); oscs.push(os);
+    });
+    /* いきの おと */
+    const br = ctx.createBufferSource(), bf = ctx.createBiquadFilter(), bg = ctx.createGain();
+    br.buffer = noiseBuf; br.loop = true;
+    bf.type = 'bandpass'; bf.frequency.value = 1900; bf.Q.value = 0.7;
+    bg.gain.setValueAtTime(0.0001, t); bg.gain.linearRampToValueAtTime(0.05, t+0.06);
+    br.connect(bf); bf.connect(bg); bg.connect(g);
+    br.start(t, Math.random()*1.5);
+    /* ふきはじめの「フッ」*/
+    noise(t, g, 'bandpass', 2600, 0.8, 0.07, 0.035);
+
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.62*v, t+0.05);
+    g.gain.linearRampToValueAtTime(0.52*v, t+0.25);
+
+    const stop = te => {
+      te = Math.max(te, t+0.07);
+      g.gain.cancelScheduledValues(te);
+      g.gain.setTargetAtTime(0.0001, te, 0.025);
+      bg.gain.setTargetAtTime(0.0001, te, 0.02);
+      oscs.forEach(os => os.stop(te+0.3));
+      br.stop(te+0.3);
+    };
+    if (dur != null) stop(t + Math.max(0.1, dur*0.88));
+    return {stop};
+  },
+};
+
+/* メトロノーム（かたい きの おと）*/
+function click(t, accent, out, boost){
+  const g = ctx.createGain();
+  g.gain.value = 5 * (VOL.click == null ? 1 : VOL.click) * (boost || 1);
+  g.connect(out || master);
+  const v = accent ? 1 : 0.62;
+  noise(t, g, 'bandpass', accent ? 2600 : 2000, 1.6, 0.10*v, 0.011);
+  partial(t, g, accent ? 1560 : 1180, 0.07*v, 0.045, 'triangle');
+  partial(t, g, accent ? 2340 : 1770, 0.035*v, 0.028, 'triangle');
+  setTimeout(() => { try{ g.disconnect(); }catch(_){} }, (Math.max(0, t - ctx.currentTime) + 1.5)*1000);
+}
+
+const INST = {
+  wood:      {name:'ウッドブロック',icon:'<rect x="3" y="11" width="26" height="13" rx="3" fill="#D9A25C" stroke="currentColor" stroke-width="1.8"/><path d="M8 14.5h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M24 9l5-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/><circle cx="23.4" cy="9.6" r="2.6" fill="#8B5E3C" stroke="currentColor" stroke-width="1.4"/>'},
+  drum:      {name:'わだいこ',      icon:'<path d="M5 12v9c0 2.8 4.9 5 11 5s11-2.2 11-5v-9" fill="#E8B04A" stroke="currentColor" stroke-width="1.8"/><ellipse cx="16" cy="12" rx="11" ry="4.5" fill="#FFF7E0" stroke="currentColor" stroke-width="1.8"/><path d="M8 3l6 7M24 3l-6 7" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>'},
+  castanet:  {name:'カスタネット',  icon:'<circle cx="13" cy="18" r="9" fill="#3D7DCA" stroke="currentColor" stroke-width="1.8"/><circle cx="19" cy="14" r="9" fill="#E2504A" stroke="currentColor" stroke-width="1.8"/><circle cx="19" cy="8" r="1.5" fill="currentColor"/>'},
+  tambourine:{name:'タンバリン',    icon:'<circle cx="16" cy="16" r="11" fill="#FFF7E0" stroke="currentColor" stroke-width="1.8"/><circle cx="16" cy="16" r="11" fill="none" stroke="#C98B4B" stroke-width="4" stroke-dasharray="11 6.3"/><circle cx="16" cy="5" r="2.4" fill="#C9CFCC" stroke="currentColor" stroke-width="1.2"/><circle cx="27" cy="16" r="2.4" fill="#C9CFCC" stroke="currentColor" stroke-width="1.2"/><circle cx="16" cy="27" r="2.4" fill="#C9CFCC" stroke="currentColor" stroke-width="1.2"/><circle cx="5" cy="16" r="2.4" fill="#C9CFCC" stroke="currentColor" stroke-width="1.2"/>'},
+  triangle:  {name:'トライアングル',icon:'<path d="M7 26h20L16 6l-6.5 12" fill="none" stroke="#9AA4A0" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/><path d="M22 12l7-7" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>'},
+  clap:      {name:'てびょうし',    icon:'<rect x="6" y="12" width="9" height="16" rx="4.5" transform="rotate(-18 10 20)" fill="#FFD9B0" stroke="currentColor" stroke-width="1.8"/><rect x="17" y="12" width="9" height="16" rx="4.5" transform="rotate(18 22 20)" fill="#FFD9B0" stroke="currentColor" stroke-width="1.8"/><path d="M16 3v5M9 5l2.5 4M23 5l-2.5 4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>'},
+  recorder:  {name:'リコーダー',    icon:'<g transform="rotate(40 16 16)"><rect x="12.5" y="1" width="7" height="30" rx="3.5" fill="#F3E9D2" stroke="currentColor" stroke-width="1.8"/><path d="M12.5 8V4.5a3.5 3.5 0 0 1 7 0V8z" fill="#8B5E3C" stroke="currentColor" stroke-width="1.8"/><circle cx="16" cy="13" r="1.3" fill="currentColor"/><circle cx="16" cy="18" r="1.3" fill="currentColor"/><circle cx="16" cy="23" r="1.3" fill="currentColor"/></g>'},
+};
+const WET   = {wood:0.14, drum:0.17, castanet:0.10, tambourine:0.18, triangle:0.32, clap:0.26, recorder:0.12};
+const LEVEL = {wood:1.70, drum:0.78, castanet:1.70, tambourine:2.00, triangle:1.20, clap:3.60, recorder:1.15};
+
+function hit(inst, t, dur, out, opts){
+  const dry = ctx.createGain(); dry.gain.value = (LEVEL[inst] || 1) * (VOL[inst] == null ? 1 : VOL[inst]); dry.connect(out || master);
+  const send = ctx.createGain(); send.gain.value = WET[inst] || 0.1;
+  dry.connect(send); send.connect(wetIn);
+  const r = SOUND[inst](t, dur, dry, opts || {});
+  const clean = () => { try{ dry.disconnect(); send.disconnect(); }catch(_){} };
+  if (dur == null && r && r.stop) return {stop(te){ r.stop(te); setTimeout(clean, 3500); }};
+  setTimeout(clean, (Math.max(0, t - ctx.currentTime) + (dur || 0) + 4)*1000);
+  return r;
+}
+function preview(id){
+  if (play || T[id].rest || !ensureAudio()) return;
+  hit(act().inst, ctx.currentTime + 0.01, T[id].dur * 60/state.tempo/4, null, {vel:0.92});
+}
+
+/* =========================================================
+   えんそう（2つの パートを いっしょに）
+   ========================================================= */
+let play = null;
+function hasSound(){
+  return state.metro || state.parts.some(pt => !pt.mute && (pt.intro.some(id => !T[id].rest) || pt.score.some(ms => ms.some(id => !T[id].rest))));
+}
+function schedulePass(t0, countIn){
+  const spu = 60/state.tempo/4, C = cap(), total = C*state.measures;
+  let start = t0;
+  const hasIntro = state.parts.some(pt => pt.intro.length);
+  if (countIn){
+    if (hasIntro){
+      if (state.metro) for (let b=0; b<state.beats; b++) click(t0 + b*4*spu, b===0, play.out);
+      state.parts.forEach(pt => {
+        if (pt.mute) return;
+        let pos = 0;
+        pt.intro.forEach(id => {
+          if (!T[id].rest) hit(pt.inst, t0 + pos*spu, T[id].dur*spu, play.out, {
+            rim: T[id].dur === 1 && pos % 2 === 1,
+            vel: pos % 4 === 0 ? 1 : (T[id].dur === 1 ? 0.86 : 0.9),
+          });
+          pos += T[id].dur;
+        });
+      });
+    } else {
+      for (let b=0; b<state.beats; b++) click(t0 + b*4*spu, b===0, play.out, 1.6);
+    }
+    start = t0 + C*spu;
+  }
+  if (state.metro) for (let b=0; b<state.beats*state.measures; b++) click(start + b*4*spu, b%state.beats===0, play.out);
+  state.parts.forEach(pt => {
+    if (pt.mute) return;
+    pt.score.forEach((ms,m) => {
+      let pos = m*C;
+      ms.forEach(id => {
+        if (!T[id].rest) hit(pt.inst, start + pos*spu, T[id].dur*spu, play.out, {
+          rim: T[id].dur === 1 && pos % 2 === 1,
+          vel: pos % 4 === 0 ? 1 : (T[id].dur === 1 ? 0.86 : 0.9),
+        });
+        pos += T[id].dur;
+      });
+    });
+  });
+  return {start, end:start + total*spu, spu, cap:C, intro: !!(countIn && hasIntro)};
+}
+function startPlay(){
+  if (!state.parts.some(pt => pt.score.some(ms => ms.length))){ say('さきに おんぷカードを ならべよう。'); return; }
+  if (!hasSound()){ say('どちらの パートも「じぶん」だよ。メトロノームを つけると れんしゅうできるよ。'); return; }
+  if (!ensureAudio()) return;
+  state.sel = null; render();
+  play = {out:ctx.createGain(), cur:null, next:null, raf:0};
+  play.out.connect(master);
+  play.cur = schedulePass(ctx.currentTime + 0.15, true);
+  $('btn-play').classList.add('on'); $('btn-play').textContent = '■ とめる';
+  const self = state.parts.filter(pt => pt.mute).map((pt,i) => MARK[state.parts.indexOf(pt)]);
+  say(self.length ? `かぞえてから はじまるよ。${self.join('と')}は じぶんで たたこう。` : 'かぞえてから はじまるよ。');
+  play.raf = requestAnimationFrame(tick);
+}
+function stopPlay(natural){
+  if (!play) return;
+  cancelAnimationFrame(play.raf);
+  const out = play.out;
+  if (!natural){ out.gain.setTargetAtTime(0, ctx.currentTime, 0.01); setTimeout(() => out.disconnect(), 400); }
+  else setTimeout(() => out.disconnect(), 2500);
+  play = null;
+  setHL(null, null); showCount('');
+  $('btn-play').classList.remove('on'); $('btn-play').textContent = '▶ えんそうする';
+  say(natural ? 'おしまい。もういちど きく？' : 'とめたよ。');
+}
+function showCount(v){
+  const txt = String(v);
+  if (countEl.textContent !== txt) countEl.textContent = txt;
+  countEl.classList.toggle('on', txt !== '');
+}
+function setHL(spots, bk){
+  hl.items = hl.items || [null,null];
+  hl.keys = hl.keys || ['',''];
+  for (let p=0; p<2; p++){
+    const sp = spots && spots[p];
+    const key = sp ? sp.m+':'+sp.i : '';
+    if (hl.keys[p] === key) continue;
+    hl.items[p] && hl.items[p].classList.remove('playing');
+    hl.items[p] = sp ? scoreEl.querySelector(`.item[data-p="${p}"][data-m="${sp.m}"][data-i="${sp.i}"]`) : null;
+    hl.items[p] && hl.items[p].classList.add('playing');
+    hl.keys[p] = key;
+  }
+  if (hl.bk !== (bk||'')){
+    hl.beat && hl.beat.classList.remove('on');
+    hl.beat = bk ? scoreEl.querySelector(`.beat[data-m="${bk.split(':')[0]}"][data-b="${bk.split(':')[1]}"]`) : null;
+    hl.beat && hl.beat.classList.add('on');
+    hl.bk = bk || '';
+  }
+}
+function tick(){
+  if (!play) return;
+  const now = ctx.currentTime;
+  if (play.next && now >= play.next.start){ play.cur = play.next; play.next = null; }
+  const p = play.cur;
+  if (now >= p.end && !play.next){ stopPlay(true); return; }
+  if (state.loop && !play.next && now > p.end - 0.3) play.next = schedulePass(p.end, false);
+  const pos = (now - p.start) / p.spu;
+  if (pos < 0){
+    const ip = pos + p.cap;
+    if (p.intro){
+      showCount('');
+      const spots = state.parts.map(pt => {
+        let acc = 0, idx = null;
+        pt.intro.some((id,i) => { if (ip < acc + T[id].dur){ idx = i; return true; } acc += T[id].dur; return false; });
+        return idx == null ? null : {m:-1, i:idx};
+      });
+      setHL(spots, '-1:' + Math.floor(ip/4));
+    } else {
+      showCount(Math.max(1, Math.floor(ip/4) + 1)); setHL(null, null);
+    }
+  } else {
+    showCount('');
+    const m = Math.min(state.measures-1, Math.floor(pos/p.cap)), within = pos - m*p.cap;
+    const spots = state.parts.map(pt => {
+      let acc = 0, idx = null;
+      (pt.score[m] || []).some((id,i) => { if (within < acc + T[id].dur){ idx = i; return true; } acc += T[id].dur; return false; });
+      return idx == null ? null : {m, i:idx};
+    });
+    setHL(spots, m + ':' + Math.floor(within/4));
+  }
+  play.raf = requestAnimationFrame(tick);
+}
+
+/* =========================================================
+   がめんを くみたてる
+   ========================================================= */
+function cardHTML(id){
+  const t = T[id];
+  return `<button class="mag${t.rest?' rest':''}" data-id="${id}" aria-label="${t.nm.join('').replace(' ','')}、${t.ln}">
+    <svg viewBox="-30 -48 60 66" aria-hidden="true"><line class="line-g" x1="-26" y1="0" x2="26" y2="0"/><g transform="translate(${t.rest?0:-3},0)">${glyph(id,false)}</g></svg>
+    <span class="ln">${t.ln}</span><span class="nm">${t.nm[0]}<br>${t.nm[1]}</span></button>`;
+}
+function g_per(){ return geometry().per; }
+function refreshSegs(){
+  document.querySelectorAll('#seg-beats button').forEach(b => b.setAttribute('aria-pressed', String(+b.dataset.v === state.beats)));
+  document.querySelectorAll('#seg-target button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.t === state.target)));
+  $('meas-out').textContent = state.measures;
+  $('m-down').disabled = state.measures <= 1;
+  $('m-up').disabled = state.measures >= MAXM;
+}
+function refreshParts(){
+  state.parts.forEach((pt,p) => {
+    const row = document.querySelector(`.prow[data-p="${p}"]`);
+    row.classList.toggle('act', p === state.active);
+    row.querySelector('.pbtn').setAttribute('aria-pressed', String(p === state.active));
+    row.querySelector('.pinst').textContent = INST[pt.inst].name;
+    row.querySelector('.picon').innerHTML = INST[pt.inst].icon;
+    row.querySelectorAll('.seg.mini button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.mute === '1') === pt.mute)));
+  });
+  refreshVol();
+  const tag = `<span class="dot d${state.active+1}"></span>${MARK[state.active]} ${INST[act().inst].name}`;
+  $('tag-a').innerHTML = tag + (state.target === 'intro' ? '<b>イントロ</b>' : ''); $('tag-b').innerHTML = tag;
+  document.querySelectorAll('.inst').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.id === act().inst)));
+  $('pad-name').textContent = INST[act().inst].name;
+  const taiko = act().inst === 'drum';
+  $('pad').classList.toggle('taiko', taiko);
+  $('pad-hint').textContent = taiko ? 'まんなかは ドン、ふちは カッ' : 'ここを たたこう（スペースキーでも なるよ）';
+}
+function build(){
+  $('seg-beats').innerHTML = [2,3,4].map(v => `<button data-v="${v}" aria-label="4ぶんの${v}びょうし"><span class="frac"><span>${v}</span><span>4</span></span></button>`).join('');
+  $('cards-note').innerHTML = NOTE_IDS.map(cardHTML).join('');
+  $('cards-rest').innerHTML = REST_IDS.map(cardHTML).join('');
+  $('samples').innerHTML = SAMPLES.map((s,i) => `<button class="btn" data-i="${i}">${s.label}</button>`).join('');
+  $('randoms').innerHTML = [['かんたん','★'],['ふつう','★★'],['むずかしい','★★★']].map((r,i) => `<button class="btn" data-lv="${i+1}">${r[0]} ${r[1]}</button>`).join('');
+  $('insts').innerHTML = Object.entries(INST).map(([id,o]) => `<button class="inst" data-id="${id}"><svg viewBox="0 0 32 32" aria-hidden="true">${o.icon}</svg>${o.name}</button>`).join('');
+  $('parts').innerHTML = state.parts.map((pt,p) => `
+    <div class="prow" data-p="${p}">
+      <button class="pbtn" data-p="${p}" aria-pressed="false">
+        <span class="dot d${p+1}"></span>${MARK[p]}
+        <svg class="picon" viewBox="0 0 32 32" aria-hidden="true"></svg>
+        <span class="pinst"></span>
+        <span class="nowtag">ならべる</span>
+      </button>
+      <div class="seg mini" role="group" aria-label="${MARK[p]}の おと">
+        <button data-p="${p}" data-mute="0">ならす</button>
+        <button data-p="${p}" data-mute="1">じぶん</button>
+      </div>
+    </div>`).join('');
+}
+
+function bind(){
+  $('seg-beats').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setBeats(+b.dataset.v); });
+  $('seg-target').addEventListener('click', e => { const b = e.target.closest('button'); if (b) setTarget(b.dataset.t); });
+  $('m-up').addEventListener('click', () => setMeasures(state.measures + 1));
+  $('m-down').addEventListener('click', () => setMeasures(state.measures - 1));
+  $('btn-say').addEventListener('click', e => { state.showSay = !state.showSay; e.currentTarget.setAttribute('aria-pressed', String(state.showSay)); render(); });
+  document.querySelectorAll('.cards').forEach(c => c.addEventListener('click', e => { const b = e.target.closest('.mag'); if (b) place(b.dataset.id); }));
+  $('btn-del').addEventListener('click', removeOne);
+  $('btn-clear').addEventListener('click', clearAll);
+  $('samples').addEventListener('click', e => { const b = e.target.closest('button'); if (b) loadSample(SAMPLES[+b.dataset.i]); });
+  $('randoms').addEventListener('click', e => { const b = e.target.closest('button'); if (b) randomScore(+b.dataset.lv); });
+  $('slots').addEventListener('click', e => {
+    const load = e.target.closest('.slot-load');
+    if (load){ loadSlot(+load.dataset.i); return; }
+    const save = e.target.closest('.slot-btn.save');
+    if (save){ saveSlot(+save.dataset.i); return; }
+    const del = e.target.closest('.slot-btn.del');
+    if (del) delSlot(+del.dataset.i);
+  });
+  $('btn-play').addEventListener('click', () => play ? stopPlay() : startPlay());
+
+  const tempo = $('tempo');
+  tempo.addEventListener('input', () => setTempo(+tempo.value));
+  $('t-down').addEventListener('click', () => setTempo(state.tempo - 4));
+  $('t-up').addEventListener('click', () => setTempo(state.tempo + 4));
+  const vi = $('vol-inst'), vc = $('vol-click');
+  vi.addEventListener('input', () => setVol(act().inst, +vi.value));
+  vi.addEventListener('change', () => testVol(act().inst));
+  vc.addEventListener('input', () => setVol('click', +vc.value));
+  vc.addEventListener('change', () => testVol('click'));
+  $('vi-down').addEventListener('click', () => { setVol(act().inst, +vi.value - 10); testVol(act().inst); });
+  $('vi-up').addEventListener('click',   () => { setVol(act().inst, +vi.value + 10); testVol(act().inst); });
+  $('vc-down').addEventListener('click', () => { setVol('click', +vc.value - 10); testVol('click'); });
+  $('vc-up').addEventListener('click',   () => { setVol('click', +vc.value + 10); testVol('click'); });
+
+  $('btn-metro').addEventListener('click', e => { state.metro = !state.metro; e.currentTarget.setAttribute('aria-pressed', String(state.metro)); });
+  $('btn-loop').addEventListener('click', e => { state.loop = !state.loop; e.currentTarget.setAttribute('aria-pressed', String(state.loop)); });
+
+  /* パート：えらぶ／おとを ならす・じぶんで */
+  $('parts').addEventListener('click', e => {
+    const mute = e.target.closest('.seg.mini button');
+    if (mute){
+      const p = +mute.dataset.p, m = mute.dataset.mute === '1';
+      state.parts[p].mute = m;
+      state.active = p; state.sel = null;
+      refreshParts(); render();
+      say(m ? `${MARK[p]}は おとを ださないよ。じぶんで たたいて れんしゅうしよう。` : `${MARK[p]}の おとが なるよ。`);
+      return;
+    }
+    const pick = e.target.closest('.pbtn');
+    if (pick){
+      state.active = +pick.dataset.p; state.sel = null;
+      refreshParts(); render();
+      say(`${MARK[state.active]}（${INST[act().inst].name}）に カードを ならべるよ。`);
+    }
+  });
+
+  $('insts').addEventListener('click', e => {
+    const b = e.target.closest('.inst'); if (!b) return;
+    act().inst = b.dataset.id;
+    refreshParts(); render();
+    if (!play && ensureAudio()) hit(act().inst, ctx.currentTime + 0.02, 0.4, null, {});
+  });
+
+  /* こくばんの おんぷを えらぶ */
+  const pickNote = el => {
+    const p = +el.dataset.p, m = +el.dataset.m, i = +el.dataset.i;
+    const same = state.sel && state.sel.p===p && state.sel.m===m && state.sel.i===i;
+    state.sel = same ? null : {p,m,i};
+    state.target = m < 0 ? 'intro' : 'main';
+    refreshSegs();
+    if (!same && p !== state.active){ state.active = p; }
+    refreshParts();
+    render();
+    say(same ? 'えらぶのを やめたよ。' : 'えらんだよ。カードを おすと とりかえ、「1つ けす」で けせるよ。');
+    if (!same){ const again = scoreEl.querySelector(`.item[data-p="${p}"][data-m="${m}"][data-i="${i}"]`); again && again.focus({preventScroll:true}); }
+  };
+  $('board').addEventListener('click', e => {
+    const it = e.target.closest('.item');
+    if (it){ pickNote(it); return; }
+    const row = e.target.closest('.row');
+    if (row){
+      const want = row.classList.contains('intro') ? 'intro' : 'main';
+      if (want !== state.target){ setTarget(want); return; }
+    }
+    if (state.sel){ state.sel = null; render(); say('えらぶのを やめたよ。'); }
+  });
+  $('board').addEventListener('keydown', e => {
+    const it = e.target.closest && e.target.closest('.item');
+    if (it && (e.key === 'Enter' || e.key === ' ')){ e.preventDefault(); e.stopPropagation(); pickNote(it); }
+  });
+
+  /* たたくパッド */
+  const pad = $('pad'); let held = null;
+  const down = ev => {
+    if (!ensureAudio()) return;
+    held && held.stop(ctx.currentTime);
+    let rim = false;
+    if (act().inst === 'drum' && ev && ev.clientX != null){
+      const r = pad.getBoundingClientRect();
+      const nx = (ev.clientX - (r.left + r.width/2))/(r.width/2);
+      const ny = (ev.clientY - (r.top + r.height/2))/(r.height/2);
+      rim = Math.hypot(nx, ny) > 0.8;
+    }
+    held = hit(act().inst, ctx.currentTime, null, null, {rim}) || null;
+    pad.classList.add('hit');
+    if (!held) setTimeout(() => pad.classList.remove('hit'), 90);
+  };
+  const up = () => { if (held){ held.stop(ctx.currentTime); held = null; } pad.classList.remove('hit'); };
+  pad.addEventListener('pointerdown', e => { e.preventDefault(); try{ pad.setPointerCapture(e.pointerId); }catch(_){} down(e); });
+  pad.addEventListener('pointerup', up);
+  pad.addEventListener('pointercancel', up);
+  pad.addEventListener('contextmenu', e => e.preventDefault());
+  document.addEventListener('keydown', e => {
+    if (e.code !== 'Space' || e.repeat) return;
+    const tg = e.target;
+    if (tg !== pad && tg !== document.body && tg.closest && tg.closest('button,input,.item')) return;
+    e.preventDefault(); down();
+  });
+  document.addEventListener('keyup', e => { if (e.code === 'Space') up(); });
+
+  let rt = 0;
+  if (window.ResizeObserver){
+    let lastW = 0;
+    new ResizeObserver(() => {
+      const w = scoreEl.clientWidth; if (w === lastW) return; lastW = w;
+      clearTimeout(rt); rt = setTimeout(render, 80);
+    }).observe(scoreEl);
+  } else window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(render, 120); });
+}
+
+build(); bind(); refreshSegs(); initSlots();
+loadSample(SAMPLES[0], 0);
+loadSample(SAMPLES[3], 1);
+refreshParts(); render();
+say('①と ②が いっしょに なるよ。②を「じぶん」に すると、①を ききながら れんしゅうできるよ。');
+})();
+</script>
+</body>
+</html>
